@@ -54,7 +54,7 @@ function setupEventListeners() {
 
   // Open web app
   btnOpenApp.addEventListener('click', () => {
-    chrome.tabs.create({ url: 'https://mihyun123.github.io/myscriptdocs/public/' });
+    chrome.tabs.create({ url: 'https://myscriptdocs.vercel.app/' });
   });
 
   // Send subtitles to web app
@@ -63,10 +63,10 @@ function setupEventListeners() {
 
     // Search for existing MyScriptDocs web app tabs
     chrome.tabs.query({}, (tabs) => {
-      // Find tabs matching GitHub Pages URL or local network IP addresses
+      // Find tabs matching Vercel URL or local network IP addresses
       const webAppTabs = tabs.filter(tab => {
         const url = tab.url || '';
-        return url.startsWith('https://mihyun123.github.io/myscriptdocs/public/') ||
+        return url.startsWith('https://myscriptdocs.vercel.app/') ||
                url.startsWith('http://localhost:3000') ||
                url.startsWith('http://127.0.0.1:3000') ||
                /https?:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+):3000/.test(url);
@@ -85,7 +85,7 @@ function setupEventListeners() {
         });
       } else {
         // Open web app in new tab. Relaying is handled by webapp_relay.js auto-load.
-        chrome.tabs.create({ url: 'https://mihyun123.github.io/myscriptdocs/public/' }, () => {
+        chrome.tabs.create({ url: 'https://myscriptdocs.vercel.app/' }, () => {
           alert("학습 웹앱이 열려있지 않아 새 탭으로 실행합니다. 잠시 후 자막이 자동으로 전송됩니다.");
           window.close();
         });
