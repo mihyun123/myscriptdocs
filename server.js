@@ -39,26 +39,47 @@ app.get('/api/youtube-transcript', async (req, res) => {
   try {
     console.log(`Fetching details & subtitles for video: ${videoId}`);
     // Fetch video details and subtitles
-    const details = await getVideoDetails({ videoID: videoId, lang: 'en' });
+    let transcriptData = null;
+    let title = 'YouTube Video';
     
-    // Check if subtitles were retrieved
-    if (!details.subtitles || details.subtitles.length === 0) {
+    try {
+      const details = await getVideoDetails({ videoID: videoId, lang: 'en' });
+      if (details.subtitles && details.subtitles.length > 0) {
+        title = details.title || title;
+        transcriptData = details.subtitles.map(s => ({
+          start: parseFloat(s.start),
+          duration: parseFloat(s.dur),
+          text: s.text
+        }));
+      }
+    } catch (e) {
+      console.log('Primary extractor failed, trying fallback...');
+    }
+
+    if (!transcriptData) {
+      // Fallback to youtube-transcript
+      const { YoutubeTranscript } = require('@danielxceron/youtube-transcript');
+      const fallbackResult = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' });
+      if (fallbackResult && fallbackResult.length > 0) {
+        transcriptData = fallbackResult.map(s => ({
+          start: s.offset / 1000,
+          duration: s.duration / 1000,
+          text: s.text
+        }));
+      }
+    }
+
+    if (!transcriptData || transcriptData.length === 0) {
       return res.status(404).json({ 
         error: 'No English subtitles found for this video on the server. You can try playing the video on PC with the MyScriptDocs extension, or copy-paste the transcript manually.',
-        title: details.title,
-        description: details.description
+        title: title
       });
     }
 
     res.json({
       videoId,
-      title: details.title,
-      description: details.description,
-      transcript: details.subtitles.map(s => ({
-        start: parseFloat(s.start),
-        duration: parseFloat(s.dur),
-        text: s.text
-      }))
+      title: title,
+      transcript: transcriptData
     });
 
   } catch (error) {
