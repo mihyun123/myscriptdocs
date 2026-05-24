@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyScriptDocs (마이스크립트독스) - 영상 자막 학습 문서 변환기</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <div class="background-glow"></div>
+  
+  <div class="container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo">
+        <span class="logo-icon">📝</span>
+        <h1>MyScriptDocs</h1>
+      </div>
+      <div class="header-actions">
+        <button id="btn-settings" class="btn-icon" title="설정">⚙️</button>
+      </div>
+    </header>
+
+    <!-- Main Grid Layout -->
+    <main class="app-grid">
+      <!-- Left Column: Input & Auth -->
+      <section class="card glass input-section">
+        <h2 class="card-title">1. 동영상 연결 및 로그인</h2>
+        
+        <!-- Google login -->
+        <div class="auth-box">
+          <div id="google-user-info" class="user-info hidden">
+            <span class="avatar" id="user-avatar">👤</span>
+            <div class="user-details">
+              <p class="user-name" id="user-name">구글 로그인됨</p>
+              <p class="user-email" id="user-email">-</p>
+            </div>
+            <button id="btn-google-logout" class="btn-subtle">로그아웃</button>
+          </div>
+          <button id="btn-google-login" class="btn-primary btn-google">
+            <span class="btn-icon-img">🔐</span> Google 계정 로그인
+          </button>
+        </div>
+
+        <hr class="divider">
+
+        <!-- Tab selection (YouTube Link vs Captured Netflix vs Manual Text) -->
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="tab-youtube">YouTube</button>
+          <button class="tab-btn" data-tab="tab-netflix">Netflix</button>
+          <button class="tab-btn" data-tab="tab-manual">직접 붙여넣기</button>
+        </div>
+
+        <div class="tab-content active" id="tab-youtube">
+          <div class="input-group">
+            <label for="youtube-url">유튜브 영상 링크</label>
+            <input type="text" id="youtube-url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
+          </div>
+        </div>
+
+        <div class="tab-content" id="tab-netflix">
+          <div class="netflix-status-box">
+            <div class="status-indicator" id="netflix-capture-status">
+              <span class="indicator-dot red"></span>
+              <span class="status-text">넷플릭스 자막 캡처 대기 중...</span>
+            </div>
+            <p class="info-text">
+              PC 크롬 브라우저에서 넷플릭스 영상을 틀어놓고 <strong>MyScriptDocs 확장프로그램</strong> 팝업에서 [웹앱으로 전송]을 누르면 여기에 자동으로 입력됩니다.
+            </p>
+            <div id="netflix-captured-info" class="captured-info hidden">
+              <div class="info-badge">자막 로드 완료</div>
+              <p class="captured-title" id="netflix-title">제목 없음</p>
+              <p class="captured-cues" id="netflix-cues-count">0개 자막 대사</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-content" id="tab-manual">
+          <div class="input-group">
+            <label for="manual-title">자료 제목</label>
+            <input type="text" id="manual-title" placeholder="예: 미드 오피스 S01E01 공부용" autocomplete="off">
+          </div>
+          <div class="input-group">
+            <label for="manual-text">자막 텍스트 직접 입력 (시간 포함 또는 줄바꿈 구분)</label>
+            <textarea id="manual-text" placeholder="예:&#10;00:01:23 Hello, John.&#10;00:01:26 Hi, how are you?"></textarea>
+          </div>
+        </div>
+
+        <button id="btn-process" class="btn-action" disabled>구글 드라이브로 스크립트 전송</button>
+        <span class="help-text" style="display:block; text-align:center; margin-top:8px; font-size:11.5px; color:var(--text-muted); opacity: 0.85;">※ API 키 미설정 시 크롬 확장프로그램의 ChatGPT 무료 자동화 기능이 가동됩니다.</span>
+      </section>
+
+      <!-- Right Column: Process & Output -->
+      <section class="card glass status-section">
+        <h2 class="card-title">2. 처리 상태 및 문서 링크</h2>
+        
+        <div class="progress-container">
+          <div class="spinner-container">
+            <div class="spinner" id="process-spinner"></div>
+            <div class="spinner-checkmark hidden" id="process-checkmark">✓</div>
+          </div>
+          <p class="progress-status" id="status-headline">대기 중</p>
+          <div class="progress-bar-wrapper">
+            <div class="progress-bar" id="progress-bar" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <div class="log-console" id="log-console">
+          <div class="log-entry system">시스템 준비 완료. 구글 로그인 및 자막 소스 링크를 확인해 주세요.</div>
+        </div>
+
+        <div id="output-box" class="output-box hidden">
+          <h3 class="output-title">🎉 문서 생성 완료!</h3>
+          <p>구글 드라이브의 <strong class="folder-highlight">MyScriptDocs</strong> 폴더에 문서가 정상적으로 업로드되었습니다.</p>
+          <div class="document-links" id="document-links-list">
+            <!-- Dynamically populated links -->
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay hidden" id="modal-settings">
+    <div class="modal glass">
+      <div class="modal-header">
+        <h2>⚙️ 설정 패널</h2>
+        <button id="btn-close-settings" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group">
+          <label for="setting-openai-key">OpenAI API Key (선택 사항 - API 직접 호출용)</label>
+          <input type="password" id="setting-openai-key" placeholder="sk-proj-... (비워둘 시 ChatGPT 무료 자동화 모드)">
+          <span class="help-text">OpenAI API 키를 입력하면 매우 빠르고 안정적인 백그라운드 변환이 가능합니다. 비워둘 경우 크롬 확장프로그램을 통한 **ChatGPT 웹 자동화 모드(무료)**로 자동 가동됩니다. (API 키는 브라우저 보안 저장소에만 보관됩니다.)</span>
+        </div>
+
+        <div class="input-group">
+          <label for="setting-google-client-id">Google Client ID (OAuth 로그인용)</label>
+          <input type="text" id="setting-google-client-id" placeholder="xxxx.apps.googleusercontent.com">
+          <span class="help-text">구글 연동을 위해 자신만의 OAuth 클라이언트 ID가 필요합니다. <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a>에서 승인된 리디렉션 URI에 <code>http://localhost:3000</code>을 추가하고 발급받아 주세요.</span>
+        </div>
+
+        <div class="input-grid">
+          <div class="input-group">
+            <label for="setting-vocabulary-level">어휘 공부 기준 레벨</label>
+            <select id="setting-vocabulary-level">
+              <option value="middle_school" selected>중학교 수준 단어 이상 (고급/실생활 회화 중심)</option>
+              <option value="high_school">고등학교 수준 단어 이상 (전문/고급 단어 중심)</option>
+              <option value="easy">초등학교 수준 단어 이상 (기초 생활 영어 중심)</option>
+            </select>
+          </div>
+
+          <div class="input-group">
+            <label for="setting-split-duration">문서당 분할 시간 (분)</label>
+            <select id="setting-split-duration">
+              <option value="10">10분 단위</option>
+              <option value="15" selected>15분 단위 (추천)</option>
+              <option value="20">20분 단위</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button id="btn-save-settings" class="btn-primary">설정 저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
